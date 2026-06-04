@@ -4,6 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>利益計算ツール v1.0</title>
+
+<!-- PWA・ホーム画面追加対応 -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="利益計算">
+<meta name="mobile-web-app-capable" content="yes">
+
+<!-- ホーム画面アイコン（SVGをbase64で埋め込み） -->
+<link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMjAgMTIwIj4KICA8cmVjdCB3aWR0aD0iMTIwIiBoZWlnaHQ9IjEyMCIgcng9IjI0IiBmaWxsPSIjMWExYTE4Ii8+CiAgPHRleHQgeD0iNjAiIHk9IjUyIiBmb250LWZhbWlseT0iLWFwcGxlLXN5c3RlbSxzYW5zLXNlcmlmIiBmb250LXNpemU9IjQyIiBmb250LXdlaWdodD0iNzAwIiBmaWxsPSIjMUQ5RTc1IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj7CpTwvdGV4dD4KICA8dGV4dCB4PSI2MCIgeT0iODQiIGZvbnQtZmFtaWx5PSItYXBwbGUtc3lzdGVtLHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTYiIGZvbnQtd2VpZ2h0PSI2MDAiIGZpbGw9IiNmZmYiIHRleHQtYW5jaG9yPSJtaWRkbGUiPuWIqeebiuioiOeulzwvdGV4dD4KPC9zdmc+">
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 body {
@@ -142,6 +151,16 @@ h1 { font-size: 17px; font-weight: 600; text-align: center; margin-bottom: 3px; 
 </style>
 </head>
 <body>
+<div id="ios-guide" style="display:none; background:#fff3d6; border-radius:12px; padding:14px 16px; margin-bottom:14px; font-size:13px; color:#7a4f00; line-height:1.9;">
+  <div style="font-weight:700; margin-bottom:6px;">📱 ホーム画面に追加する方法</div>
+  <div>① このページをSafariで開いた状態で</div>
+  <div>② 画面下の <b>共有ボタン（□↑）</b> をタップ</div>
+  <div>③ <b>「ホーム画面に追加」</b> を選択</div>
+  <div>④ 「追加」をタップで完了！</div>
+  <div style="margin-top:8px; font-size:11px; color:#a06000;">※ファイルアプリからは開けません。iCloud Drive内のファイルをSafariで開いてください。</div>
+  <div style="margin-top:8px; text-align:right;"><span onclick="document.getElementById('ios-guide').style.display='none'" style="font-size:12px; color:#2980e8; cursor:pointer;">閉じる</span></div>
+</div>
+
 <div class="app">
   <h1>利益計算ツール</h1>
   <p class="sub">ヤフオク・エコオク対応　<span style="background:#e8f3ff;color:#1558b0;font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px;letter-spacing:.04em;">v1.0</span></p>
@@ -181,6 +200,22 @@ h1 { font-size: 17px; font-weight: 600; text-align: center; margin-bottom: 3px; 
     <div class="eco-detail" id="eco-cost-detail" style="display:none;">
       税込落札額：<b id="ec-taxed">—</b>　手数料（税込）：<b id="ec-fee">—</b><br>
       仕入れ総支払い：<span class="eco-total" id="ec-total-buy">—</span>
+    </div>
+
+    <div class="row" id="coupon-row" style="display:none;">
+      <div class="row-label">
+        ヤフオククーポン
+        <span class="sublbl">落札額から割引（段階制）</span>
+      </div>
+      <select id="coupon" onchange="calc()">
+        <option value="none" selected>使わない</option>
+        <option value="gold">ゴールドクーポン（週末）</option>
+        <option value="zorome">ゾロ目の日（11・22日）※PayPay条件あり</option>
+        <option value="five">5のつく日（5・15・25日）※PayPay条件あり</option>
+      </select>
+    </div>
+    <div class="eco-detail" id="coupon-detail" style="display:none;">
+      <span id="coupon-info">—</span>
     </div>
 
     <div class="row">
@@ -451,6 +486,34 @@ function getEcoShip(){
 function getBuyShip(){
   return parseFloat(document.getElementById('buy-ship').value)||0;
 }
+
+// ヤフオククーポン割引額（税込落札額に対して段階制）
+function getCouponDiscount(taxedPrice, typeOverride){
+  if(buyC!=='yahoo') return 0;
+  const type=(typeOverride!==undefined)?typeOverride:document.getElementById('coupon').value;
+  if(type==='none') return 0;
+  if(type==='gold'){
+    // ゴールドクーポン：1000円以上200円 / 3000円以上1500円 / 10000円以上4000円
+    if(taxedPrice>=10000) return 4000;
+    if(taxedPrice>=3000)  return 1500;
+    if(taxedPrice>=1000)  return 200;
+    return 0;
+  }
+  if(type==='zorome'){
+    // ゾロ目の日：1000円以上100円 / 10000円以上500円
+    if(taxedPrice>=10000) return 500;
+    if(taxedPrice>=1000)  return 100;
+    return 0;
+  }
+  if(type==='five'){
+    // 5のつく日：ゾロ目と同等の段階制（目安）
+    if(taxedPrice>=10000) return 500;
+    if(taxedPrice>=1000)  return 100;
+    return 0;
+  }
+  return 0;
+}
+
 let buyC='yahoo', sellC='standard';
 
 function ecoBuyFeeBase(p){
@@ -467,12 +530,45 @@ function ecoSellFee(p){
 }
 function getSellFee(p){ return sellC==='standard'?p*0.10:ecoSellFee(p); }
 
-function calcMaxCost(price,extra,ship,target){
+function calcMaxCost(price,extra,ship,target,couponOverride){
   const ecoShip=getEcoShip();
   const buyShip=getBuyShip();
   const budget=price-extra-ship-ecoShip-buyShip-getSellFee(price)-target;
   if(budget<=0)return null;
-  if(buyC==='yahoo'){const m=Math.floor(budget/1.1968);return m>0?m:null;}
+  if(buyC==='yahoo'){
+    // 【安全側計算】過剰な割引で仕入れすぎるミスを防ぐ。
+    // 支払い = 税込落札T*1.088 - クーポン割引(T) <= budget
+    // 危険：逆算で「境界ちょうど」に着地し上位割引を当てにすると、
+    //       実入札が境界を僅かに下回った瞬間に割引が激減し赤字化する。
+    // 対策：候補Tに対して「その金額で確実に効く実際の割引額」で必ず再検証する。
+    const type=(couponOverride!==undefined)?couponOverride:document.getElementById('coupon').value;
+    // まずクーポンなしで上限を出す（最も安全な基準値）
+    const baseT=Math.floor(budget/1.088);
+
+    // クーポンが効く場合は、各割引帯を仮定して逆算した候補を
+    // 「実際の割引額」で再検証し、安全に成立するものだけ採用する。
+    let bestT=baseT;
+    if(type!=='none'){
+      let tiers=[];
+      if(type==='gold')   tiers=[{th:1000,disc:200},{th:3000,disc:1500},{th:10000,disc:4000}];
+      else if(type==='zorome'||type==='five') tiers=[{th:1000,disc:100},{th:10000,disc:500}];
+      for(const t of tiers){
+        // この割引を前提に逆算した候補T
+        let T=Math.floor((budget+t.disc)/1.088);
+        // 安全側：候補Tで「実際に効く割引」を取得し直す
+        const realDisc=getCouponDiscount(T, type);
+        // 実際の割引で支払いを再計算し、予算内かつ割引がこの帯以上であることを確認
+        const realPay=T*1.088-realDisc;
+        if(realPay<=budget && realDisc>=t.disc && T>=t.th){
+          if(T>bestT) bestT=T;
+        }
+      }
+    }
+    if(bestT<=0) return null;
+    // 表示は税抜落札額（入札の基準）に変換して返す
+    const taxExclusive=Math.floor(bestT/1.1);
+    return taxExclusive>0?taxExclusive:null;
+  }
   // エコオク：各手数料帯の上限cを正確に求め、その帯で実際に成立する最大値を探す
   // 支払い合計 = (c + fee(c)) * 1.1 <= budget
   // 各帯ごとに fee は固定なので c <= budget/1.1 - fee かつ c <= 帯の上限
@@ -515,6 +611,8 @@ function setBuy(c){
     :'<span class="tag">税抜表示</span>　入札金額は税抜で表示<br>実払い = 落札額×1.1 ＋ 手数料×1.1';
   document.getElementById('cost-sub-lbl').style.display=c==='eco'?'block':'none';
   document.getElementById('eco-ship-row').style.display=c==='eco'?'':'none';
+  document.getElementById('coupon-row').style.display=c==='yahoo'?'':'none';
+  if(c!=='yahoo'){ document.getElementById('coupon-detail').style.display='none'; }
   calc();
 }
 function setSell(c){
@@ -534,9 +632,41 @@ function setIdeal(elId,subId,val,price,extra,ship,target,profitElId,rateElId){
   const el=document.getElementById(elId),sub=document.getElementById(subId);
   const C_GREEN='#1D9E75', C_BLUE='#2980e8';
   if(val!==null&&val>0){
-    el.textContent=fmt(val);
-    el.style.color='';
-    sub.textContent=buyC==='eco'?'以下（税抜）で落札':'以下で仕入れる';
+    if(buyC==='yahoo'){
+      const couponType=document.getElementById('coupon').value;
+      // 基準：クーポンなしの上限（valの計算時のクーポン設定に依存しないよう再計算）
+      const noneVal=calcMaxCost(price,extra,ship,target,'none');
+      const noneTaxed=noneVal?Math.round(noneVal*1.1):null;
+
+      if(couponType==='none'){
+        // クーポンなし：税抜（実際の入札額）をメイン、税込をサブに
+        el.innerHTML=fmt(noneVal)+'<span style="font-size:11px;font-weight:500;opacity:.7;">（税抜・入札額）</span>';
+        sub.innerHTML='税込 '+fmt(noneTaxed)+' 以下になる金額で入札';
+      } else {
+        // クーポンあり：なし と 適用後 を両方表示。適用後を色付け
+        const cpVal=calcMaxCost(price,extra,ship,target,couponType);
+        const cpTaxed=cpVal?Math.round(cpVal*1.1):null;
+        const cName=couponType==='gold'?'ゴールド':couponType==='zorome'?'ゾロ目':'5のつく日';
+        if(cpTaxed){
+          // 適用される実際の割引額（税込落札額に対して）
+          const disc=getCouponDiscount(cpTaxed, couponType);
+          el.innerHTML=
+            '<div style="font-size:13px;font-weight:500;color:#999;">通常 '+fmt(noneVal)+'（税抜）</div>'+
+            '<div style="color:#1D9E75;margin-top:2px;">'+fmt(cpVal)+'<span style="font-size:11px;font-weight:500;">（税抜・入札額・'+cName+'）</span></div>';
+          sub.innerHTML='<span style="color:#1D9E75;font-weight:600;">割引 '+fmt(disc)+'引き / 税込 '+fmt(cpTaxed)+' 以下</span>';
+        } else {
+          el.innerHTML=fmt(noneVal)+'<span style="font-size:11px;font-weight:500;opacity:.7;">（税抜・入札額）</span>';
+          sub.innerHTML='税込 '+fmt(noneTaxed)+' 以下になる金額で入札';
+        }
+      }
+    } else if(buyC==='eco'){
+      el.textContent=fmt(val);
+      sub.textContent='以下（税抜）で落札';
+    } else {
+      el.textContent=fmt(val);
+      sub.textContent='以下で仕入れる';
+    }
+    if(buyC!=='yahoo') el.style.color='';
     // 利益額を計算して表示
     if(profitElId){
       const pEl=document.getElementById(profitElId);
@@ -585,11 +715,22 @@ function calc(){
       document.getElementById('ec-total-buy').textContent=fmt(total);
       hlBuy(costInput);
     } else {
-      // ヤフオク：税込落札額(×1.1) + 手数料税込(×0.088×1.1) = ×1.1968
+      // ヤフオク：税込落札額(×1.1) + 手数料税込(×0.088×1.1)
       const yahooTaxed = Math.round(costInput * 1.1);
       const yahooFee   = Math.round(costInput * 0.088 * 1.1);
-      totalBuy = yahooTaxed + yahooFee;
+      const coupon     = getCouponDiscount(yahooTaxed); // 税込落札額に対する割引
+      totalBuy = yahooTaxed + yahooFee - coupon;
       document.getElementById('eco-cost-detail').style.display='none';
+      // クーポン内訳表示
+      const cd=document.getElementById('coupon-detail');
+      if(coupon>0){
+        cd.style.display='';
+        document.getElementById('coupon-info').innerHTML=
+          '税込落札額 '+fmt(yahooTaxed)+' － クーポン <b style="color:#1D9E75;">'+fmt(coupon)+'引き</b><br>'+
+          '＋ 手数料(税込) '+fmt(yahooFee)+' ＝ 仕入れ総支払い <b>'+fmt(totalBuy)+'</b>';
+      } else {
+        cd.style.display='none';
+      }
     }
 
     // 理想出品価格ボックスを常に表示（仕入れ価格があれば）
@@ -760,7 +901,18 @@ function calc2(){
   document.getElementById('r2-result').style.display='';
 }
 
+setBuy('yahoo'); // 初期表示でクーポン行などを正しく表示
 calc();
+
+// iOSでSafariから開いた場合、かつホーム画面未追加の場合にガイドを表示
+(function(){
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isSafari = /safari/i.test(navigator.userAgent) && !/chrome|crios|fxios/i.test(navigator.userAgent);
+  const isStandalone = window.navigator.standalone === true;
+  if(isIOS && isSafari && !isStandalone){
+    document.getElementById('ios-guide').style.display = '';
+  }
+})();
 </script>
 </body>
 </html>
