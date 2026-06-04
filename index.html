@@ -12,8 +12,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 
 <!-- ホーム画面アイコン（SVGをbase64で埋め込み） -->
-<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
-  <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMjAgMTIwIj4KICA8cmVjdCB3aWR0aD0iMTIwIiBoZWlnaHQ9IjEyMCIgcng9IjI0IiBmaWxsPSIjMWExYTE4Ii8+CiAgPHRleHQgeD0iNjAiIHk9IjUyIiBmb250LWZhbWlseT0iLWFwcGxlLXN5c3RlbSxzYW5zLXNlcmlmIiBmb250LXNpemU9IjQyIiBmb250LXdlaWdodD0iNzAwIiBmaWxsPSIjMUQ5RTc1IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj7CpTwvdGV4dD4KICA8dGV4dCB4PSI2MCIgeT0iODQiIGZvbnQtZmFtaWx5PSItYXBwbGUtc3lzdGVtLHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTYiIGZvbnQtd2VpZ2h0PSI2MDAiIGZpbGw9IiNmZmYiIHRleHQtYW5jaG9yPSJtaWRkbGUiPuWIqeebiuioiOeulzwvdGV4dD4KPC9zdmc+">
+<link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMjAgMTIwIj4KICA8cmVjdCB3aWR0aD0iMTIwIiBoZWlnaHQ9IjEyMCIgcng9IjI2IiBmaWxsPSIjMUQ5RTc1Ii8+CiAgPHRleHQgeD0iNjAiIHk9IjU4IiBmb250LWZhbWlseT0iLWFwcGxlLXN5c3RlbSxIaXJhZ2lubyBTYW5zLHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iNDQiIGZvbnQtd2VpZ2h0PSI4MDAiIGZpbGw9IiNmZmZmZmYiIHRleHQtYW5jaG9yPSJtaWRkbGUiPuWIqeebijwvdGV4dD4KICA8dGV4dCB4PSI2MCIgeT0iOTIiIGZvbnQtZmFtaWx5PSItYXBwbGUtc3lzdGVtLHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjYiIGZvbnQtd2VpZ2h0PSI3MDAiIGZpbGw9IiNmZmZmZmYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIG9wYWNpdHk9IjAuODUiPsKl6KiI566XPC90ZXh0Pgo8L3N2Zz4=">
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 body {
@@ -206,13 +205,12 @@ h1 { font-size: 17px; font-weight: 600; text-align: center; margin-bottom: 3px; 
     <div class="row" id="coupon-row" style="display:none;">
       <div class="row-label">
         ヤフオククーポン
-        <span class="sublbl">落札額から割引（段階制）</span>
+        <span class="sublbl">落札額から割引</span>
       </div>
       <select id="coupon" onchange="calc()">
         <option value="none" selected>使わない</option>
-        <option value="gold">ゴールドクーポン（週末）</option>
-        <option value="zorome">ゾロ目の日（11・22日）※PayPay条件あり</option>
-        <option value="five">5のつく日（5・15・25日）※PayPay条件あり</option>
+        <option value="gold">ゴールド 4,000円OFF（税込5万円以上）</option>
+        <option value="closer">CLOSER 10%OFF（税込1万円以上・上限3万円）</option>
       </select>
     </div>
     <div class="eco-detail" id="coupon-detail" style="display:none;">
@@ -494,22 +492,16 @@ function getCouponDiscount(taxedPrice, typeOverride){
   const type=(typeOverride!==undefined)?typeOverride:document.getElementById('coupon').value;
   if(type==='none') return 0;
   if(type==='gold'){
-    // ゴールドクーポン：1000円以上200円 / 3000円以上1500円 / 10000円以上4000円
-    if(taxedPrice>=10000) return 4000;
-    if(taxedPrice>=3000)  return 1500;
-    if(taxedPrice>=1000)  return 200;
+    // ゴールドクーポン：税込5万円以上で4,000円OFF（PayPay不要）
+    if(taxedPrice>=50000) return 4000;
     return 0;
   }
-  if(type==='zorome'){
-    // ゾロ目の日：1000円以上100円 / 10000円以上500円
-    if(taxedPrice>=10000) return 500;
-    if(taxedPrice>=1000)  return 100;
-    return 0;
-  }
-  if(type==='five'){
-    // 5のつく日：ゾロ目と同等の段階制（目安）
-    if(taxedPrice>=10000) return 500;
-    if(taxedPrice>=1000)  return 100;
+  if(type==='closer'){
+    // CLOSERクーポン：税込1万円以上で10%OFF、割引上限3万円
+    if(taxedPrice>=10000){
+      const d=Math.floor(taxedPrice*0.10);
+      return Math.min(d, 30000);
+    }
     return 0;
   }
   return 0;
@@ -546,24 +538,33 @@ function calcMaxCost(price,extra,ship,target,couponOverride){
     // まずクーポンなしで上限を出す（最も安全な基準値）
     const baseT=Math.floor(budget/1.088);
 
-    // クーポンが効く場合は、各割引帯を仮定して逆算した候補を
-    // 「実際の割引額」で再検証し、安全に成立するものだけ採用する。
+    // クーポンが効く場合の安全側計算
     let bestT=baseT;
-    if(type!=='none'){
-      let tiers=[];
-      if(type==='gold')   tiers=[{th:1000,disc:200},{th:3000,disc:1500},{th:10000,disc:4000}];
-      else if(type==='zorome'||type==='five') tiers=[{th:1000,disc:100},{th:10000,disc:500}];
-      for(const t of tiers){
-        // この割引を前提に逆算した候補T
-        let T=Math.floor((budget+t.disc)/1.088);
-        // 安全側：候補Tで「実際に効く割引」を取得し直す
-        const realDisc=getCouponDiscount(T, type);
-        // 実際の割引で支払いを再計算し、予算内かつ割引がこの帯以上であることを確認
-        const realPay=T*1.088-realDisc;
-        if(realPay<=budget && realDisc>=t.disc && T>=t.th){
-          if(T>bestT) bestT=T;
-        }
+    if(type==='gold'){
+      // ゴールド：税込5万円以上で4,000円固定OFF
+      // 支払い = T*1.088 - 4000 <= budget → T <= (budget+4000)/1.088
+      // ただし T>=50000 が条件。条件を満たす場合のみ採用。
+      const T=Math.floor((budget+4000)/1.088);
+      if(T>=50000 && T*1.088-4000<=budget){
+        if(T>bestT) bestT=T;
       }
+    } else if(type==='closer'){
+      // CLOSER：税込1万円以上で10%OFF（上限3万円）
+      // 上限未到達域： 支払い = T*1.088 - T*0.1 = T*0.988 <= budget → T <= budget/0.988
+      //   ただし割引が3万円に達する手前（T<=300000）まで。かつ T>=10000。
+      // 上限到達域(T>300000)： 支払い = T*1.088 - 30000 <= budget → T <= (budget+30000)/1.088
+      let cand=null;
+      // ケースA：10%が効く範囲（T<=300000）
+      const Ta=Math.floor(budget/0.988);
+      if(Ta>=10000 && Ta<=300000 && Ta*1.088-Math.min(Math.floor(Ta*0.1),30000)<=budget){
+        cand=Ta;
+      }
+      // ケースB：割引上限3万円に張り付く範囲（T>300000）
+      const Tb=Math.floor((budget+30000)/1.088);
+      if(Tb>300000 && Tb*1.088-30000<=budget){
+        if(cand===null||Tb>cand) cand=Tb;
+      }
+      if(cand!==null && cand>bestT) bestT=cand;
     }
     if(bestT<=0) return null;
     // 表示は税抜落札額（入札の基準）に変換して返す
@@ -647,7 +648,7 @@ function setIdeal(elId,subId,val,price,extra,ship,target,profitElId,rateElId){
         // クーポンあり：なし と 適用後 を両方表示。適用後を色付け
         const cpVal=calcMaxCost(price,extra,ship,target,couponType);
         const cpTaxed=cpVal?Math.round(cpVal*1.1):null;
-        const cName=couponType==='gold'?'ゴールド':couponType==='zorome'?'ゾロ目':'5のつく日';
+        const cName=couponType==='gold'?'ゴールド':'CLOSER';
         if(cpTaxed){
           // 適用される実際の割引額（税込落札額に対して）
           const disc=getCouponDiscount(cpTaxed, couponType);
